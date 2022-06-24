@@ -18,10 +18,15 @@ public class JpaMain {
         tx.begin();
 
         try {
+            Team team = new Team();
+            team.setName("신형철");
+            em.persist(team);
 
             Member member = new Member();
             member.setUsername("신형철");
             member.setAge(29);
+            member.setTeam(team);
+            member.setType(MemberType.ADMIN);
             em.persist(member);
 
             em.flush();
@@ -101,12 +106,10 @@ public class JpaMain {
             em.createQuery("SELECT new jpql.MemberDTO(m.username, m.age) FROM Member m", MemberDTO.class)
                     .getResultList();
 
-            System.out.println("트랜잭션 커밋 =====================================================");
-
-
             em.flush();
             em.clear();
 
+            System.out.println("페이징 =====================================================");
             //페이징 API
             List<Member> paging = em.createQuery("select m from Member m order by m.age desc", Member.class)
                     .setFirstResult(0)
@@ -118,7 +121,61 @@ public class JpaMain {
                 System.out.println("paging = " + member1.toString());
             }
 
+            System.out.println("조인 =====================================================");
+            //inner 조인
+            List<Member> join1 = em.createQuery("select m from Member m inner join m.team t", Member.class)
+                    .getResultList();
 
+            //outer 조인
+            List<Member> join2 = em.createQuery("select m from Member m left outer join m.team t", Member.class)
+                    .getResultList();
+
+            //세타 조인
+            List<Member> join3 = em.createQuery("select m from Member m, Team t where m.username = t.name", Member.class)
+                    .getResultList();
+
+            //on
+            List<Member> join4 = em.createQuery("select m from Member m left join m.team t on t.name = '신형철'", Member.class)
+                    .getResultList();
+
+            //연관관계 없는 엔티티 외부 조인
+//            List<Member> join5 = em.createQuery("select m from Member m join Team t on m.username = t.name'", Member.class)
+//                    .getResultList();
+
+            System.out.println("JPQL 타입표현과 기타식 =====================================================");
+            List<Object[]> type = em.createQuery("SELECT m.username, 'HELLO', TRUE FROM Member m where m.type = jpql.MemberType.ADMIN")
+                    .getResultList();
+
+
+            System.out.println("조건식 =====================================================");
+            //조건식 case 식
+            String query ="select " +
+                            "case when m.age <= 10 then '학생요금' " +
+                            "when m.age >= 60 then '경로요금' " +
+                            "else '일반 요금' " +
+                            "end " +
+                            "from Member m";
+            List<String> condition1 = em.createQuery(query, String.class).getResultList();
+
+            //COALESCE
+            String query2 = "select coalesce(m.username, '이름 없는 회원') from Member m";
+            List<String> condition2 = em.createQuery(query2, String.class).getResultList();
+
+            //NULLIF
+            String query3 = "select nullif(m.username = '신형철') from Member m";
+            List<String> condition3 = em.createQuery(query2, String.class).getResultList();
+
+
+            System.out.println("JPQL 기본 함수 =====================================================");
+            String functionQuery1 = "select 'a' || 'b' from Member m";
+            List<String> function1 = em.createQuery(functionQuery1, String.class).getResultList();
+
+            //size
+            String functionQuery2 = "select size(t.members) from Team t";
+            List<Integer> function2 = em.createQuery(functionQuery2, Integer.class).getResultList();
+
+
+            System.out.println("트랜잭션 커밋 =====================================================");
             tx.commit();
         } catch (Exception e) {
             tx.rollback();
