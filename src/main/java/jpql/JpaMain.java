@@ -175,6 +175,21 @@ public class JpaMain {
             List<Integer> function2 = em.createQuery(functionQuery2, Integer.class).getResultList();
 
 
+            System.out.println("페치 조인 =====================================================");
+            //페치 조인
+            String fetchQuery1 = "select m from Member m join fetch m.team";
+            List<Member> fetch1 = em.createQuery(fetchQuery1, Member.class).getResultList();
+
+            String fetchQuery2 = "select t from Team t join fetch t.members";
+            List<Team> fetch2 = em.createQuery(fetchQuery2, Team.class).getResultList();
+            for(Team team2 : fetch2) {
+                System.out.println("teamname = " + team.getName() + ", team = " + team);
+                for (Member member2 : team.getMembers()) {
+                    //페치 조인으로 팀과 회원을 함께 조회해서 지연 로딩 발생 안함
+                    System.out.println("username = " + member2.getUsername() + " , member = " + member2);
+                }//end for()
+            }//end for()
+
             System.out.println("트랜잭션 커밋 =====================================================");
             tx.commit();
         } catch (Exception e) {
